@@ -1,10 +1,13 @@
 # Password Strength Checker & Generator
 
-A comprehensive Python tool for generating secure passwords and evaluating their strength. This utility helps you create cryptographically strong passwords and provides detailed analysis of existing passwords with actionable recommendations for improvement.
+Advanced Edition - NIST Compliant
+
+A comprehensive Python tool for generating secure passwords and evaluating their strength using industry-standard guidelines. This utility incorporates principles from NIST SP 800-63B, OWASP authentication recommendations, and information theory to provide accurate password security analysis.
 
 ## Table of Contents
 
 - [Features](#features)
+- [Security References](#security-references)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -13,43 +16,77 @@ A comprehensive Python tool for generating secure passwords and evaluating their
   - [Command-Line Examples](#command-line-examples)
 - [How Password Generation Works](#how-password-generation-works)
 - [How Strength Evaluation Works](#how-strength-evaluation-works)
+  - [Entropy Calculation](#entropy-calculation)
+  - [Crack Time Estimation](#crack-time-estimation)
+  - [NIST Compliance Checks](#nist-compliance-checks)
+  - [Pattern Detection](#pattern-detection)
   - [Scoring System](#scoring-system)
   - [Strength Levels](#strength-levels)
-  - [Common Pattern Detection](#common-pattern-detection)
 - [Security Best Practices](#security-best-practices)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
 
 ## Features
 
-- **Secure Password Generation**: Creates cryptographically secure random passwords using Python's `secrets` module
+### Password Generation
+- **Cryptographically Secure**: Uses Python's `secrets` module for true random number generation
 - **Customizable Options**:
-  - Adjustable length (minimum 4 characters, recommended 16+)
-  - Toggle inclusion of uppercase letters (A-Z)
-  - Toggle inclusion of lowercase letters (a-z)
-  - Toggle inclusion of digits (0-9)
-  - Toggle inclusion of special characters (!@#$%^&*...)
-  - Option to exclude visually ambiguous characters (l, I, 1, L, o, O, 0)
-- **Comprehensive Strength Analysis**:
-  - Numerical scoring from 0 to 100
-  - Categorical ratings (Very Weak to Very Strong)
-  - Detailed feedback with specific improvement suggestions
-- **Pattern Detection**: Identifies and penalizes:
-  - Repeated characters (e.g., "aaa")
-  - Sequential patterns (e.g., "abc", "123", "qwerty")
-  - Common dictionary words (e.g., "password", "admin")
-- **No External Dependencies**: Uses only Python standard library modules
+  - Adjustable length (4-128 characters, recommended 16+)
+  - Toggle uppercase letters (A-Z)
+  - Toggle lowercase letters (a-z)
+  - Toggle digits (0-9)
+  - Toggle special characters (!@#$%^&*...)
+  - Exclude visually ambiguous characters (l, I, 1, L, o, O, 0)
+  - Automatic pattern avoidance
+
+### Strength Analysis
+- **Shannon Entropy Calculation**: Measures password unpredictability in bits
+- **Crack Time Estimation**: Shows how long it would take to brute-force
+- **NIST SP 800-63B Compliance**: Checks against federal security guidelines
+- **Pattern Detection**: Identifies weak patterns including:
+  - Repeated characters (aaa, 111)
+  - Sequential patterns (abc, 123, cba, 321)
+  - Keyboard walks (qwerty, asdf, zxcv)
+  - Common passwords from breach databases
+  - Dictionary words and substrings
+  - Date patterns (years, MMDD formats)
+- **Detailed Feedback**: Actionable suggestions for improvement
+- **Numerical Scoring**: 0-100 scale with categorical ratings
+
+## Security References
+
+This tool implements recommendations from:
+
+1. **NIST Special Publication 800-63B** (Digital Identity Guidelines)
+   - Minimum 8-character length requirement
+   - Breached password screening
+   - No mandatory composition rules (but variety still recommended)
+   - Maximum 64-character support
+
+2. **OWASP Authentication Cheat Sheet**
+   - Strong random password generation
+   - Pattern detection and prevention
+   - Entropy-based strength measurement
+
+3. **Information Theory (Shannon Entropy)**
+   - Mathematical measurement of password randomness
+   - Pool size and length-based calculations
+
+4. **Common Password Databases**
+   - RockYou breach data
+   - Have I Been Pwned top lists
+   - SecLists common passwords
 
 ## Requirements
 
 - Python 3.6 or higher
-- No external packages required (uses only standard library: `secrets`, `string`, `re`, `typing`)
+- No external packages required (uses only standard library)
 
 ## Installation
 
 1. Clone or download this repository
-2. Ensure Python 3.6+ is installed (check with `python --version` or `python3 --version`)
-3. No additional installation steps required
+2. Verify Python installation: `python --version` or `python3 --version`
+3. No additional setup needed - ready to use immediately
 
 ## Usage
 
@@ -113,7 +150,7 @@ Select option 3 to close the application.
 You can import and use the functions directly in your own Python scripts:
 
 ```python
-from password_tool import generate_password, check_strength
+from password_tool import generate_password, check_strength, calculate_entropy, estimate_crack_time
 
 # Example 1: Generate a default 16-character password
 password = generate_password()
@@ -137,14 +174,25 @@ password = generate_password(
 )
 print(f"Easy-to-read password: {password}")
 
-# Example 4: Check the strength of any password
-strength, score, feedback = check_strength("MySecureP@ss123")
+# Example 4: Check the strength of any password (returns 4 values now)
+strength, score, feedback, metrics = check_strength("MySecureP@ss123")
 print(f"Strength: {strength}")
 print(f"Score: {score}/100")
+print(f"Entropy: {metrics['entropy']} bits")
+print(f"Crack time: {metrics['crack_time']}")
+print(f"NIST Compliant: {metrics['nist_compliant']}")
 if feedback:
     print("Suggestions:")
     for suggestion in feedback:
         print(f"  - {suggestion}")
+
+# Example 5: Calculate entropy directly
+entropy = calculate_entropy("MyPassword123!")
+print(f"Entropy: {entropy} bits")
+
+# Example 6: Estimate crack time
+crack_time = estimate_crack_time(entropy=80.0)
+print(f"Estimated crack time: {crack_time}")
 ```
 
 ### Command-Line Examples
@@ -180,10 +228,10 @@ python password_tool.py
 The password generation algorithm ensures both security and randomness:
 
 1. **Character Pool Construction**: Based on your selections, the tool builds a pool of allowed characters from four categories:
-   - Lowercase: a-z
-   - Uppercase: A-Z
-   - Digits: 0-9
-   - Special: !@#$%^&*()_+-=[]{}|;:,.<>?
+   - Lowercase: a-z (26 characters)
+   - Uppercase: A-Z (26 characters)
+   - Digits: 0-9 (10 characters)
+   - Special: !@#$%^&*()_+-=[]{}|;:,.<>? (32 characters)
 
 2. **Guaranteed Character Inclusion**: If you enable multiple character types, the algorithm guarantees at least one character from each enabled type appears in the password. This prevents accidentally generating passwords that lack variety.
 
@@ -196,13 +244,74 @@ The password generation algorithm ensures both security and randomness:
    - Uppercase O (O)
    - Number zero (0)
 
-4. **Cryptographic Randomness**: The tool uses Python's `secrets` module, which generates cryptographically secure random numbers suitable for managing data such as passwords and authentication tokens. This is more secure than the standard `random` module.
+4. **Cryptographic Randomness**: The tool uses Python's `secrets` module, which generates cryptographically secure random numbers suitable for managing data such as passwords and authentication tokens. This is more secure than the standard `random` module because it uses operating system sources of randomness.
 
 5. **Random Shuffling**: After building the password character by character, the algorithm performs a Fisher-Yates shuffle using `secrets.randbelow()` to ensure guaranteed characters don't appear in predictable positions.
 
+6. **Pattern Avoidance**: The generator automatically checks for sequential or repeated patterns and regenerates the password if any are detected (for passwords 8+ characters).
+
 ## How Strength Evaluation Works
 
-The strength checker analyzes passwords using multiple criteria and produces a score from 0 to 100.
+The strength checker analyzes passwords using multiple scientific criteria and produces a comprehensive security assessment.
+
+### Entropy Calculation
+
+Entropy measures the unpredictability of a password in bits, based on information theory developed by Claude Shannon.
+
+**Formula**: `Entropy = Length * log2(Pool Size)`
+
+Where:
+- Length = number of characters in the password
+- Pool Size = total number of possible characters used (e.g., 26 for lowercase only, 94 for all ASCII printable)
+
+**Interpretation**:
+- 0-30 bits: Very weak, easily cracked
+- 30-50 bits: Weak to fair
+- 50-60 bits: Good for basic protection
+- 60-80 bits: Strong, suitable for most applications
+- 80+ bits: Very strong, resistant to brute-force attacks
+
+### Crack Time Estimation
+
+Based on entropy, the tool estimates how long it would take an attacker to crack the password via brute force.
+
+**Assumptions**:
+- Default attack speed: 10 billion guesses per second (high-end GPU cluster)
+- Average case: attacker needs to try half of all possible combinations
+
+**Example estimates**:
+- 40 bits entropy: ~9 minutes
+- 60 bits entropy: ~6 days
+- 80 bits entropy: ~4 years
+- 100 bits entropy: ~centuries
+
+### NIST Compliance Checks
+
+The tool evaluates passwords against NIST SP 800-63B Digital Identity Guidelines:
+
+| Check | Requirement | Why It Matters |
+|-------|-------------|----------------|
+| Minimum Length | At least 8 characters | Short passwords are easily brute-forced |
+| Maximum Length | Up to 64 characters supported | Some systems have input limits |
+| Not Common | Not in breach databases | Common passwords are tried first by attackers |
+| No Repeated Chars | No 3+ consecutive identical characters | Patterns reduce effective entropy |
+| Printable ASCII | All characters must be printable | Ensures compatibility across systems |
+
+### Pattern Detection
+
+The tool identifies several types of weak patterns:
+
+1. **Sequential Letters**: Detects "abc", "xyz", "ABC", and reverse sequences like "cba"
+2. **Sequential Numbers**: Detects "123", "456", "789", and reverse sequences like "321"
+3. **Keyboard Patterns**: Detects common keyboard walks:
+   - Top row: qwertyuiop
+   - Home row: asdfghjkl
+   - Bottom row: zxcvbnm
+   - Diagonal patterns: qazwsx, 1qaz, 2wsx
+4. **Repeated Characters**: Flags any character repeated 3+ times (aaa, 1111)
+5. **Common Passwords**: Checks against 40+ most breached passwords
+6. **Dictionary Words**: Detects common substrings like "password", "admin", "secret"
+7. **Date Patterns**: Identifies years (1990-2099) and date formats (MMDD)
 
 ### Scoring System
 
@@ -210,50 +319,42 @@ The strength checker analyzes passwords using multiple criteria and produces a s
 
 | Criterion | Points | Details |
 |-----------|--------|---------|
-| Length 16-19 characters | +25 | Good length |
-| Length 20+ characters | +30 | Excellent length |
-| Length 12-15 characters | +20 | Acceptable length |
-| Length 8-11 characters | +10 | Minimum acceptable |
+| Length 20+ characters | +35 | Excellent length |
+| Length 16-19 characters | +30 | Very good length |
+| Length 12-15 characters | +25 | Good length |
+| Length 8-11 characters | +15 | Minimum acceptable |
 | Contains lowercase letters | +10 | Adds variety |
 | Contains uppercase letters | +10 | Adds variety |
 | Contains digits | +10 | Adds variety |
 | Contains special characters | +15 | Significantly increases complexity |
+| Uses 3+ character types | +5 | Bonus for variety |
+| Uses all 4 character types | +5 | Additional bonus |
 
 **Negative Points (what makes a password weaker):**
 
 | Issue | Penalty | Example |
 |-------|---------|---------|
-| Repeated characters (3+ same char) | -10 | "aaa", "1111" |
-| Sequential patterns | -5 | "abc", "123", "qwerty" |
-| Common dictionary words | -15 | "password", "admin", "letmein" |
+| Too short (<8 chars) | -20 | "abc123" |
+| Common password | -30 | "password123" |
+| Contains common words | -20 | "MyPassword1" |
+| Repeated characters | -15 | "aaabbb" |
+| Sequential/keyboard patterns | -10 | "qwerty123" |
+| Year pattern detected | -5 | "Summer2024" |
+| Date pattern detected | -5 | "01151990" |
 
 ### Strength Levels
 
-Based on the final score, passwords are categorized as follows:
+Based on the final score AND entropy, passwords are categorized as follows:
 
-| Score Range | Rating | Recommendation |
-|-------------|--------|----------------|
-| 0-19 | Very Weak | Change immediately. This password offers minimal protection. |
-| 20-39 | Weak | Improve significantly. Not suitable for important accounts. |
-| 40-59 | Fair | Acceptable for low-risk accounts, but should be strengthened. |
-| 60-79 | Strong | Good for most purposes. Consider minor improvements. |
-| 80-100 | Very Strong | Excellent. Suitable for high-security applications. |
+| Score Range | Min Entropy | Rating | Recommendation |
+|-------------|-------------|--------|----------------|
+| 0-24 | <30 bits | Very Weak | Change immediately. Easily cracked in seconds. |
+| 25-44 | <40 bits | Weak | Improve significantly. Cracked in hours to days. |
+| 45-64 | <50 bits | Fair | Acceptable for low-risk accounts only. |
+| 65-84 | <60 bits | Strong | Good for most purposes. Minor improvements optional. |
+| 85-100 | 60+ bits | Very Strong | Excellent. Suitable for high-security applications. |
 
-### Common Pattern Detection
-
-The tool checks for several types of predictable patterns that attackers commonly try:
-
-1. **Sequential Letters**: Detects sequences like "abc", "xyz", "ABC"
-2. **Sequential Numbers**: Detects "123", "456", "789"
-3. **Keyboard Patterns**: Detects common keyboard walks like "qwerty", "asdf", "zxcv"
-4. **Repeated Characters**: Flags any character repeated 3 or more times consecutively
-5. **Common Words**: Checks against a list of frequently used (and easily guessed) words:
-   - password
-   - admin
-   - user
-   - login
-   - welcome
-   - letmein
+Note: Both score AND entropy must meet thresholds for higher ratings. A password with high score but low entropy (due to patterns) will receive a lower rating.
 
 ## Security Best Practices
 
